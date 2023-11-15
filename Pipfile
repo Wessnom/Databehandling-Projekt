@@ -8,6 +8,10 @@ numpy = "*"
 pandas = "*"
 matplotlib = "*"
 ipykernel = "*"
+seaborn = "*"
+dash = "*"
+nbformat = "*"
+plotly-express = "*"
 
 [dev-packages]
 
