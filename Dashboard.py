@@ -1,8 +1,6 @@
 """
-    Ok. Som ni ser nedan så har jag tagit myyycket från senaste Dashgenomgången som utgångspunkt.
-    Nu precis innan jag ville gå och läga mig så hittade jag ett sätt att importera variabler från en .ipynb fil!
-    Detta skulle kunna förminska vårt koduppreande och då alltså den totala koden i denna fil väsentligt!
-    Men sen vet jag inte om vi bryr oss om det. //ISAK
+    Ok. Som ni ser nedan så har jag tagit myyycket från senaste Dashgenomgången som utgångspunkt. Basically ctrl+c ctrl+v.
+    Försöker testa få in lite plots och union jack som sidbakgrund på något vis. //ISAK
 """
 
 
@@ -14,25 +12,33 @@ from dash_bootstrap_templates import load_figure_template
 
 load_figure_template("darkly")
 
-# import uppgift2
-
 df_UK = pd.read_csv("../Databehandling-Projekt/data/athlete_events.csv").query("NOC == 'GBR'")
+
+gb_rowing = df_UK[df_UK['Sport'] == 'Rowing']
+gb_cycling = df_UK[df_UK['Sport'] == 'Cycling']
+gb_sailing = df_UK[df_UK['Sport'] == 'Sailing']
+
+medal_trend_rowing = gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+medal_trend_cycling = gb_cycling.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+medal_trend_sailing = gb_sailing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+
+medal_trend_df = pd.DataFrame({'Rowing': medal_trend_rowing, 'Cycling': medal_trend_cycling, 'Football': medal_trend_sailing}).fillna(0)
 
 app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
         meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"},],)
 
-app.layout = html.Div(style={
-    "background-image": "url(“assets/UK-flag.png”)",
-    "background-repeat": "no-repeat",
-    "background-position": "right top",
-    "background-size": "150px 100px"
-},children = [
-    html.H1("Hello World"),
-    html.P("This image has an image in the background")
-]),
+# Skapa en bakgrund med brittiska flaggan (funkar ej)
+# Hur kombo med container layout nedan?
 
-dbc.Container([
+# app.layout = html.Div(style={
+#     "background-image": "url("assets/UK-flag.png")",
+#     "background-repeat": "no-repeat",
+#     "background-position": "right top",
+#     "background-size": "150px 100px"
+# }),
+
+app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H1("Great Britian, Olympic Games", className="text-center text-primary mt-3"),
@@ -44,11 +50,11 @@ dbc.Container([
             dcc.Dropdown(
                 id="single_dropdown", multi=False, searchable=False, 
                 className="mb-2",
-                #options=[stock for stock in stocks["Symbols"].unique()],
+                options=[sport for sport in medal_trend_df],
                 style={"color": "#333"},
-                #value="AAPL"
+                #value=""
             ),
-            dcc.Graph(id="volume_graph",
+            dcc.Graph(id="medal_graph",
                         figure= {})
         ], xs=12, sm=11, md=10, lg=5),
         
@@ -81,13 +87,12 @@ dbc.Container([
     
 ], fluid=True)
 
-# @callback(
-#     Output("volume_graph", "figure"),
-#     Input("single_dropdown", "value")
-# )
-# def update_volume_graph(symbol):
-#     df = stocks.query("Symbols == @symbol")
-#     return px.line(df, x=df.index, y="Volume")
+@callback(
+    Output("medal_graph", "figure"),
+    Input("single_dropdown", "value")
+)
+def update_volume_graph(sport):
+    return px.histogram(medal_trend_df)
 
 # @callback(
 #     Output("closing_graph", "figure"),
