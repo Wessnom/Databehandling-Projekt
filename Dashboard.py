@@ -22,7 +22,17 @@ app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
         meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"},],)
 
-app.layout = dbc.Container([
+app.layout = html.Div(style={
+    "background-image": "url(“assets/UK-flag.png”)",
+    "background-repeat": "no-repeat",
+    "background-position": "right top",
+    "background-size": "150px 100px"
+},children = [
+    html.H1("Hello World"),
+    html.P("This image has an image in the background")
+]),
+
+dbc.Container([
     dbc.Row([
         dbc.Col([
             html.H1("Great Britian, Olympic Games", className="text-center text-primary mt-3"),
