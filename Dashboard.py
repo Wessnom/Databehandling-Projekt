@@ -1,6 +1,11 @@
 """
     Ok. Som ni ser nedan så har jag tagit myyycket från senaste Dashgenomgången som utgångspunkt. Basically ctrl+c ctrl+v.
-    Försöker testa få in lite plots och union jack som sidbakgrund på något vis. //ISAK
+    Försöker testa få in lite plots och union jack som sidbakgrund på något vis.
+    
+    Vad vill vi annars att sidan ska kunna visa? Alltså jag antar typ alla grafer, men på vilket sätt?
+    Jag tycker personligen att det känns konstigt att ersätta px inbyggda valbarhetsfunktionalitet
+    med menyer i Dash. Men helt klart behöver vi kunna välja mellan grejer, eller vill vi ha allt sammanställt på
+    "startsidan", liksom side-by-side? Ska vi ha någon förklarande text? //ISAK
 """
 
 
@@ -10,7 +15,7 @@ import plotly.express as px
 import pandas as pd
 from dash_bootstrap_templates import load_figure_template
 
-load_figure_template("darkly")
+# load_figure_template("darkly")
 
 df_UK = pd.read_csv("../Databehandling-Projekt/data/athlete_events.csv").query("NOC == 'GBR'")
 
@@ -28,48 +33,44 @@ app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
         meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"},],)
 
-# Skapa en bakgrund med brittiska flaggan (funkar ej)
-# Hur kombo med container layout nedan?
-
-# app.layout = html.Div(style={
-#     "background-image": "url("assets/UK-flag.png")",
-#     "background-repeat": "no-repeat",
-#     "background-position": "right top",
-#     "background-size": "150px 100px"
-# }),
+# Skapa en bakgrund med brittiska flaggan
 
 app.layout = dbc.Container([
+    html.Div([
+        html.Img(src='/assets/UK-flag.png')
+    ], style={
+        "size": "100%",
+        "position": "absolute",
+        "top": "0",
+        "left": "0",
+        "z-index": "-1",
+        "opacity": "0.2",
+        "width": "100%",
+        "height": "100%",
+        "background-repeat": "repeat",
+    }),
     dbc.Row([
         dbc.Col([
-            html.H1("Great Britian, Olympic Games", className="text-center text-primary mt-3"),
+            html.H1("Great Britian - Olympic Games",
+                className="text-center text-primary mt-3"),
         ], width=12)
     ]),
+    
+# Dropdown meny som gör noll just nu, men callar de olika sporterna i medal_trend_df
     
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
                 id="single_dropdown", multi=False, searchable=False, 
-                className="mb-2",
+                className="mb-1",
                 options=[sport for sport in medal_trend_df],
                 style={"color": "#333"},
                 #value=""
             ),
             dcc.Graph(id="medal_graph",
-                        figure= {})
-        ], xs=12, sm=11, md=10, lg=5),
-        
-        dbc.Col([
-            dcc.Dropdown(
-                id="multi_dropdown", multi=True, searchable=False, 
-                className="mb-2",
-                #options=[stock for stock in stocks["Symbols"].unique()],
-                style={"color": "#333"},
-                #value=["AAPL", "MSFT", "MRNA", "BNTX", "PFE"]
-            ),
-            dcc.Graph(id="closing_graph",
-                        figure= {})
-        ], xs=12, sm=11, md=10, lg=5),
-    ], justify="evenly"),
+                        figure= {},
+                        )
+        ])], justify="evenly"),
     
     dbc.Row([
         dbc.Col([
@@ -84,15 +85,29 @@ app.layout = dbc.Container([
                 ),
         ], width=12)
     ]),
-    
 ], fluid=True)
+
+medal_trend_fig = px.line(medal_trend_df, 
+    x=medal_trend_df.index,
+    y=medal_trend_df.columns,
+    title=f"Medal trend for {', '.join(medal_trend_df.columns)}",
+    labels={'index': 'Year', 'value': 'Medals', 'variable': 'Sport'},
+    color_discrete_sequence=['navy', 'red', 'green'],
+)
+medal_trend_fig.update_layout(
+    xaxis = dict(
+        tickmode='linear',
+        tick0=1896,
+        dtick=4,
+    )
+)
 
 @callback(
     Output("medal_graph", "figure"),
     Input("single_dropdown", "value")
 )
-def update_volume_graph(sport):
-    return px.histogram(medal_trend_df)
+def update_medal_graph(sport):
+    return medal_trend_fig
 
 # @callback(
 #     Output("closing_graph", "figure"),
