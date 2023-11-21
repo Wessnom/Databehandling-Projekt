@@ -61,7 +61,7 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
-                id="single_dropdown", multi=False, searchable=False, 
+                id="multi_dropdown", multi=True, searchable=False, 
                 className="mb-1",
                 options=[sport for sport in medal_trend_df],
                 style={"color": "#333"},
