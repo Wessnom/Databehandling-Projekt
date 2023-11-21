@@ -22,12 +22,39 @@ df_UK = pd.read_csv("../Databehandling-Projekt/data/athlete_events.csv").query("
 gb_rowing = df_UK[df_UK['Sport'] == 'Rowing']
 gb_cycling = df_UK[df_UK['Sport'] == 'Cycling']
 gb_sailing = df_UK[df_UK['Sport'] == 'Sailing']
+gb_athletics = df_UK[df_UK['Sport'] == 'Athletics']
 
 medal_trend_rowing = gb_rowing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
 medal_trend_cycling = gb_cycling.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
 medal_trend_sailing = gb_sailing.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+medal_trend_athletics = gb_athletics.dropna(subset=['Medal']).groupby('Year')['Medal'].count()
+medals_per_year = df_UK.dropna(subset=['Medal']).groupby('Year').size().reset_index(name='Count')
 
-medal_trend_df = pd.DataFrame({'Rowing': medal_trend_rowing, 'Cycling': medal_trend_cycling, 'Football': medal_trend_sailing}).fillna(0)
+medal_summary = []
+sports = ['Cycling', 'Rowing', 'Sailing', 'Athletics']
+
+for sport in sports:
+    sport_data = df_UK[df_UK['Sport'] == sport]
+
+    for gender in ['M', 'F']:
+        medals = sport_data[sport_data['Sex'] == gender]['Medal'].value_counts()
+
+        s_dict = {
+            'Sport': sport,
+            'Gender': 'Men' if gender == 'M' else 'Women',
+            'Gold': medals.get('Gold', 0),
+            'Silver': medals.get('Silver', 0),
+            'Bronze': medals.get('Bronze', 0),
+            'Total': medals.sum() 
+        }
+        medal_summary.append(s_dict)
+        
+medal_summary = pd.DataFrame(medal_summary)
+
+medal_trend_df = pd.DataFrame({'Rowing': medal_trend_rowing,
+                            'Cycling': medal_trend_cycling,
+                            'Football': medal_trend_sailing,
+                            'Athletics': medal_trend_athletics}).fillna(0)
 
 app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
@@ -37,23 +64,49 @@ app = Dash(__name__,
 
 app.layout = dbc.Container([
     html.Div([
-        html.Img(src='/assets/UK-flag.png')
-    ], style={
-        "size": "100%",
-        "position": "absolute",
-        "top": "0",
-        "left": "0",
-        "z-index": "-1",
-        "opacity": "0.2",
-        "width": "100%",
-        "height": "100%",
-        "background-repeat": "repeat",
-    }),
+        html.Img(src='/assets/UK-flag.png',
+            style={
+                "position": "absolute",
+                "left": "0",
+                "opacity": "0.4",
+                "width": "100%",
+                "height": "120%",
+                "background-repeat": "repeat",
+                },
+            )
+        ]
+            ),
     dbc.Row([
         dbc.Col([
+            html.Div([
+                html.Img(src='/assets/UK-flag.png',
+                    style={
+                        "width": "100%",
+                        "opacity" : "1",
+                    }
+                )
+            ],),
+        ], width=3),
+        dbc.Col([
             html.H1("Great Britian - Olympic Games",
-                className="text-center text-primary mt-3"),
-        ], width=12)
+                className="text-center text-primary mt-4",
+                style={"font-size": "3rem",
+                    "font-weight": "bold",
+                    "color": "#FEFEFE",
+                    "opacity": "1",
+                    },
+                ),
+        ], width=6),
+        
+        dbc.Col([
+            html.Div([
+                html.Img(src='/assets/os_flagga.jpg',
+                    style={
+                        "width": "100%",
+                    }
+                )
+            ],),
+        ], width=3),
     ]),
     
 # Dropdown meny som gör noll just nu, men callar de olika sporterna i medal_trend_df
@@ -61,7 +114,7 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
-                id="multi_dropdown", multi=True, searchable=False, 
+                id="single_dropdown", multi=False, searchable=False, 
                 className="mb-1",
                 options=[sport for sport in medal_trend_df],
                 style={"color": "#333"},
@@ -69,8 +122,14 @@ app.layout = dbc.Container([
             ),
             dcc.Graph(id="medal_graph",
                         figure= {},
-                        )
-        ])], justify="evenly"),
+                        ),
+            dcc.Graph(id="host_graph",
+                        figure= {},
+                        ),
+            dcc.Graph(id="gsb_graph",
+                        figure= {},
+                        ),
+        ],)]),
     
     dbc.Row([
         dbc.Col([
@@ -83,16 +142,21 @@ app.layout = dbc.Container([
                 style_header={"backgroundColor": "#333", "color": "#fff"}, 
                 style_data={"backgroundColor": "#333", "color": "#fff"}
                 ),
-        ], width=12)
+        ], width=6)
     ]),
-], fluid=True)
+])
 
 medal_trend_fig = px.line(medal_trend_df, 
     x=medal_trend_df.index,
     y=medal_trend_df.columns,
     title=f"Medal trend for {', '.join(medal_trend_df.columns)}",
-    labels={'index': 'Year', 'value': 'Medals', 'variable': 'Sport'},
-    color_discrete_sequence=['navy', 'red', 'green'],
+    labels={'index': 'Year',
+            'value': 'Medals',
+            'variable': 'Sport'},
+    color_discrete_sequence=['navy',
+                            'red',
+                            'green',
+                            'orange'],
 )
 medal_trend_fig.update_layout(
     xaxis = dict(
@@ -102,12 +166,62 @@ medal_trend_fig.update_layout(
     )
 )
 
+
+host_years = [1908, 1948, 2012]
+
+host_year_fig = px.line(medals_per_year,
+            x='Year',
+            y='Count',
+            title='Great Britain Olympic Medals by Year and Hosted Years',
+            labels={'Year': 'Year',
+                    'Count': 'Medals'},
+            hover_name='Year',
+            hover_data={'Year': False},
+            )
+
+host_year_fig.update_layout(xaxis=dict(tickangle=70,
+                            tickmode='array',
+                            tickvals=medals_per_year['Year'].unique(),
+                            ticktext=medals_per_year['Year'].unique())
+                )
+for year in host_years:
+    host_year_fig.add_vline(x=year,
+                            line_dash="dash",
+                            line_color="red",
+                            opacity=0.3,
+                            annotation_text=f"UK hosted year {year}",)
+
+gold_silver_bronze_fig = px.histogram(medal_summary, 
+    x='Sport',
+    y=['Gold', 'Silver', 'Bronze'],
+    title=f"Medal summary for {', '.join(medal_summary['Sport'].unique())}",
+    labels={'index': 'Year', 'value': 'Medals', 'variable': 'Sport'},
+    barmode='group',
+    color_discrete_sequence=['gold', 'silver', 'brown'],
+    hover_data=['value', 'variable'],
+    hover_name='variable'
+    )
+
 @callback(
     Output("medal_graph", "figure"),
     Input("single_dropdown", "value")
 )
-def update_medal_graph(sport):
+def medal_graph(sport):
     return medal_trend_fig
+
+@callback(
+    Output("host_graph", "figure"),
+    Input("single_dropdown", "value")
+)
+def host_graph(sport):
+    return host_year_fig
+
+@callback(
+    Output("gsb_graph", "figure"),
+    Input("single_dropdown", "value")
+)
+def gsb_graph(sport):
+    return gold_silver_bronze_fig
 
 # @callback(
 #     Output("closing_graph", "figure"),
@@ -118,4 +232,5 @@ def update_medal_graph(sport):
 #     df = stocks[stocks["Symbols"].isin(symbols)]
 #     return px.line(df, x=df.index, y="Close", color="Symbols")
 
-app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
