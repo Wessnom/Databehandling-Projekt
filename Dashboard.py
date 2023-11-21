@@ -114,7 +114,7 @@ app.layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
-                id="single_dropdown", multi=False, searchable=False, 
+                id="single_dropdown", multi=True, searchable=False, 
                 className="mb-1",
                 options=[sport for sport in medal_trend_df],
                 style={"color": "#333"},
@@ -207,7 +207,28 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
     Input("single_dropdown", "value")
 )
 def medal_graph(sport):
-    return medal_trend_fig
+    if not sport:
+        filtrted_df = medal_trend_df
+    else:
+        filtrted_df = medal_trend_df[sport]
+
+    fig = px.line(filtrted_df,
+                  x=filtrted_df.index,
+                  y=filtrted_df.columns,
+                  title=f"Medal trend for {', '.join(filtrted_df.columns)}",
+                  labels={'index': 'year', 'value': 'medals', 'variable': 'sport'},
+                  color_discrete_sequence=['navy', 'red', 'green', 'orange'])
+    
+    fig.update_layout(
+        xaxis=dict(
+            tickmode='linear',
+            tick0=1896,
+            dtick=4,
+        )
+    )
+
+    return fig
+    
 
 @callback(
     Output("host_graph", "figure"),
