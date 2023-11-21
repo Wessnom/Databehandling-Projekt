@@ -9,13 +9,13 @@
 """
 
 
-from dash import Dash, dcc, html, Input, Output, callback, dash_table
+from dash import Dash, dcc, html, Input, Output, callback, dash_table, dash
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
 from dash_bootstrap_templates import load_figure_template
+from dash.dependencies import Input, Output, validate_callback, State
 
-# load_figure_template("darkly")
 
 df_UK = pd.read_csv("../Databehandling-Projekt/data/athlete_events.csv").query("NOC == 'GBR'")
 
@@ -48,6 +48,18 @@ for sport in sports:
             'Total': medals.sum() 
         }
         medal_summary.append(s_dict)
+
+
+athlete_names = df_UK['Name'].unique()
+
+
+df_medals = df_UK.dropna(subset=['Medal'])
+
+df_medal_counts = df_medals.pivot_table(index='NOC', columns='Medal', aggfunc='size', fill_value=0)
+
+df_medal_counts.columns = ['Bronze', 'Silver', 'Gold']
+
+df_medal_counts.reset_index(inplace=True)
         
 medal_summary = pd.DataFrame(medal_summary)
 
@@ -60,22 +72,65 @@ app = Dash(__name__,
         external_stylesheets=[dbc.themes.DARKLY],
         meta_tags=[{"name": "viewport", "content": "width=device-width, initial-scale=1"},],)
 
+
+gb_athletes_table = dash_table.DataTable(
+    id='gb_athletes_table',
+    columns=[{"name": i, "id": i} for i in df_UK.columns],
+    data=df_UK.to_dict('records'),
+    filter_action='native',
+    sort_action='native',
+    page_action='native',
+    page_size=10,
+    style_table={
+        'maxWidth': '100%', 
+        'overflowX': 'auto'
+    },
+    style_cell={
+        'minWidth': '100px', 
+        'maxWidth': '180px', 
+        'width': '150px',
+        'textAlign': 'left', 
+        'backgroundColor': '#888', 
+        'color': '#fff'
+    },
+    style_header={
+        'backgroundColor': '#333', 
+        'color': '#fff'
+    },
+    style_data={
+        'backgroundColor': '#333', 
+        'color': '#fff'
+    }
+)
+
+
+app.layout = html.Div([
+    dcc.Dropdown(
+        id='athlete-search-dropdown',
+        options=[{'label': name, 'value': name} for name in athlete_names],
+        placeholder="Search for an athlete",
+        style={'width': '300px', 'position': 'absolute', 'top': '10px', 'right': '10px'},
+        searchable=True,
+        clearable=True,
+    ),
+    profile_modal,
+])
 # Skapa en bakgrund med brittiska flaggan
 
 app.layout = dbc.Container([
+    # Background image
     html.Div([
-        html.Img(src='/assets/UK-flag.png',
-            style={
-                "position": "absolute",
-                "left": "0",
-                "opacity": "0.4",
-                "width": "100%",
-                "height": "120%",
-                "background-repeat": "repeat",
-                },
-            )
-        ]
-            ),
+        html.Img(src='/assets/UK-flag.png', style={
+            "position": "absolute",
+            "left": "0",
+            "opacity": "0.4",
+            "width": "100%",
+            "height": "120%",
+            "background-repeat": "repeat",
+        }),
+    ]),
+
+    # Header row
     dbc.Row([
         dbc.Col([
             html.Div([
@@ -87,64 +142,66 @@ app.layout = dbc.Container([
                 )
             ],),
         ], width=3),
+        dbc.Col(width=3),
         dbc.Col([
-            html.H1("Great Britian - Olympic Games",
-                className="text-center text-primary mt-4",
-                style={"font-size": "3rem",
-                    "font-weight": "bold",
-                    "color": "#FEFEFE",
-                    "opacity": "1",
-                    },
-                ),
+            html.H1("Great Britain - Olympic Games", 
+                className="text-center text-primary mt-4", 
+                style={"font-size": "3rem", "font-weight": "bold", "color": "#FEFEFE", "opacity": "1"}
+            ),
         ], width=6),
-        
         dbc.Col([
             html.Div([
-                html.Img(src='/assets/os_flagga.jpg',
-                    style={
-                        "width": "100%",
-                    }
-                )
-            ],),
+                html.Img(src='/assets/os_flagga.jpg', style={"width": "100%"}),
+            ]),
         ], width=3),
     ]),
+
+    # Row for the athletes table
+    dbc.Row([
+        dbc.Col([
+            gb_athletes_table
+        ], width=12)
+    ]),
+
+        dcc.Dropdown(
+    id='country-dropdown',
+    options=[{'label': row['NOC'], 'value': row['NOC']} for index, row in df_medal_counts.iterrows()],
+    value='GBR' 
+    ),
+
+    html.Div(id='country-medal-profile'),
     
-# Dropdown meny som gör noll just nu, men callar de olika sporterna i medal_trend_df
-    
+    # Dropdown and Graphs
     dbc.Row([
         dbc.Col([
             dcc.Dropdown(
-                id="single_dropdown", multi=True, searchable=False, 
+                id="single_dropdown", 
+                multi=True, 
+                searchable=False, 
                 className="mb-1",
-                options=[sport for sport in medal_trend_df],
-                style={"color": "#333"},
-                #value=""
+                options=[{'label': sport, 'value': sport} for sport in medal_trend_df],
+                style={"color": "#333"}
             ),
-            dcc.Graph(id="medal_graph",
-                        figure= {},
-                        ),
-            dcc.Graph(id="host_graph",
-                        figure= {},
-                        ),
-            dcc.Graph(id="gsb_graph",
-                        figure= {},
-                        ),
-        ],)]),
-    
-    dbc.Row([
-        dbc.Col([
-            dash_table.DataTable(
-                #stocks.to_dict("records"), 
-                #id="stock_table", 
-                #columns=[{"name": i, "id": i} for i in stocks.columns], 
-                page_size=10, 
-                style_cell={"textAlign": "left", "backgroundColor": "#333", "color": "#fff"}, 
-                style_header={"backgroundColor": "#333", "color": "#fff"}, 
-                style_data={"backgroundColor": "#333", "color": "#fff"}
-                ),
-        ], width=6)
+            dcc.Graph(id="medal_graph", figure={}),
+            dcc.Graph(id="host_graph", figure={}),
+            dcc.Graph(id="gsb_graph", figure={}),
+        ], width=12),
     ]),
-])
+    
+    # dbc.Row([
+    #     dbc.Col([
+    #         dash_table.DataTable(
+    #             #stocks.to_dict("records"), 
+    #             #id="stock_table", 
+    #             #columns=[{"name": i, "id": i} for i in stocks.columns], 
+    #             page_size=10, 
+    #             style_cell={"textAlign": "left", "backgroundColor": "#333", "color": "#fff"}, 
+    #             style_header={"backgroundColor": "#333", "color": "#fff"}, 
+    #             style_data={"backgroundColor": "#333", "color": "#fff"}
+#                 ),
+#         ], width=6)
+#     ]),
+    ])
 
 medal_trend_fig = px.line(medal_trend_df, 
     x=medal_trend_df.index,
@@ -206,6 +263,8 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
     Output("medal_graph", "figure"),
     Input("single_dropdown", "value")
 )
+
+#Drop down menu for different sports
 def medal_graph(sport):
     if not sport:
         filtrted_df = medal_trend_df
@@ -228,7 +287,28 @@ def medal_graph(sport):
     )
 
     return fig
-    
+
+
+@callback(
+    Output('country-medal-profile', 'children'),
+    [Input('country-dropdown', 'value')]
+)
+def update_country_profile(selected_country):
+    country_data = df_medal_counts[df_medal_counts['NOC'] == selected_country]
+
+    if country_data.empty:
+        return html.P("No data available for this country.", style={'color': 'red'})
+
+    country_data = country_data.iloc[0]
+
+    profile = html.Div([
+        html.H3(f"Country: {selected_country}"),
+        html.P(f"Gold Medals: {country_data['Gold']}"),
+        html.P(f"Silver Medals: {country_data['Silver']}"),
+        html.P(f"Bronze Medals: {country_data['Bronze']}")
+    ])
+
+    return profile
 
 @callback(
     Output("host_graph", "figure"),
@@ -254,4 +334,4 @@ def gsb_graph(sport):
 #     return px.line(df, x=df.index, y="Close", color="Symbols")
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run_server(debug=True)
