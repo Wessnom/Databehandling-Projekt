@@ -15,7 +15,19 @@ import plotly.express as px
 import pandas as pd
 from dash_bootstrap_templates import load_figure_template
 from dash.dependencies import Input, Output, validate_callback, State
+import plotly.graph_objects as go
+import plotly.io as pio
 
+# Försöker ändra utseendet på alla px grafer
+dark_theme_layout = {
+    "plot_bgcolor": "#343a40",
+    "paper_bgcolor": "#343a40",
+    "font": {"color": "#ffffff"},
+    "title": {"x": 0.5, "xanchor":"center"},
+    # Finns fler saker att ändra om vi vill
+}
+pio.templates["darkly"] = go.layout.Template(layout=dark_theme_layout)
+pio.templates.default = "darkly"
 
 df_UK = pd.read_csv("../Databehandling-Projekt/data/athlete_events.csv").query("NOC == 'GBR'")
 
@@ -113,7 +125,7 @@ app.layout = html.Div([
         searchable=True,
         clearable=True,
     ),
-    profile_modal,
+ #   profile_modal, # fick ett error här så kommenterar bort atm.
 ])
 # Skapa en bakgrund med brittiska flaggan
 
