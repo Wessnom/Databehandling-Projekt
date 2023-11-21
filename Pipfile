@@ -12,6 +12,7 @@ seaborn = "*"
 dash = "*"
 nbformat = "*"
 plotly-express = "*"
+dash-bootstrap-components = "*"
 
 [dev-packages]
 
