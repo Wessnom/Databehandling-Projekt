@@ -42,6 +42,14 @@ def seasonal_graph():
                 labels={'Year': 'Olympic Year', 'Total Medals': 'Total medals won'},
                 )
 
-    fig.update_layout(barmode='group', xaxis_tickangle=-45)
+    fig.update_layout(hovermode="x unified",
+                      barmode='group', 
+                      xaxis_tickangle=-45,
+                      )
     return fig
 
+def age_data():
+    df_age = UK_athletes[['Age', 'Name']].groupby(['Name', 'Age']).count().reset_index()
+    fig = px.histogram(df_age, x='Age', title="Age distribution UK's Data")
+    fig.update_layout(hovermode="x unified")
+    return fig
