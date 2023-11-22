@@ -285,6 +285,7 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
 #     )
 # ])
 
+
 @callback(
     Output("medal_graph", "figure"),
     Input("single_dropdown", "value")
