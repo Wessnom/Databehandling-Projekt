@@ -18,6 +18,8 @@ from dash.dependencies import Input, Output, validate_callback, State
 import plotly.graph_objects as go
 import plotly.io as pio
 
+from plot_data import prepare_data_and_plots
+
 # Försöker ändra utseendet på alla px grafer
 dark_theme_layout = {
     "plot_bgcolor": "#343a40",
@@ -197,6 +199,7 @@ app.layout = dbc.Container([
             dcc.Graph(id="medal_graph", figure={}),
             dcc.Graph(id="host_graph", figure={}),
             dcc.Graph(id="gsb_graph", figure={}),
+            dcc.Graph(id='age-distribution-plot', figure={})
         ], width=12),
     ]),
     
@@ -271,6 +274,16 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
     hover_name='variable'
     )
 
+fig_all = prepare_data_and_plots()
+
+#app.layout = html.Div([
+#     html.H1("UK Athletes Age Distribution Across Different Eras"),
+#     dcc.Graph(
+#         id='age-distribution-plot',
+#         figure=fig_all
+#     )
+# ])
+
 @callback(
     Output("medal_graph", "figure"),
     Input("single_dropdown", "value")
@@ -336,6 +349,14 @@ def host_graph(sport):
 def gsb_graph(sport):
     return gold_silver_bronze_fig
 
+@app.callback(
+    Output('age-distribution-plot', 'figure'),
+    Input("single_dropdown", "value")
+)
+def update_graph(input_value):
+    fig_all = prepare_data_and_plots()
+    return fig_all
+
 # @callback(
 #     Output("closing_graph", "figure"),
 #     Input("multi_dropdown", "value")
@@ -344,6 +365,7 @@ def gsb_graph(sport):
 #     if symbols is None: symbols = []
 #     df = stocks[stocks["Symbols"].isin(symbols)]
 #     return px.line(df, x=df.index, y="Close", color="Symbols")
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
