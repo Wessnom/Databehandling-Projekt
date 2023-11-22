@@ -30,5 +30,18 @@ def prepare_data_and_plots():
 
     return fig_all
 
+# UK seasonal grafen
 
+
+def seasonal_graph():
+    UK_seasonal = UK_athletes[UK_athletes['Medal'].notna()].groupby(['Year', 'Season'])['Medal'].count().reset_index()
+    UK_seasonal.rename(columns={'Medal': 'Total Medals'}, inplace=True)
+    fig = px.bar(UK_seasonal,
+                x='Year', y='Total Medals', color='Season',
+                title='Total Olympic Medals Won by Great Britain by Year and Season',
+                labels={'Year': 'Olympic Year', 'Total Medals': 'Total medals won'},
+                )
+
+    fig.update_layout(barmode='group', xaxis_tickangle=-45)
+    return fig
 

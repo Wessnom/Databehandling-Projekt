@@ -18,7 +18,7 @@ from dash.dependencies import Input, Output, validate_callback, State
 import plotly.graph_objects as go
 import plotly.io as pio
 
-from plot_data import prepare_data_and_plots
+from plot_data import prepare_data_and_plots, seasonal_graph
 
 # Försöker ändra utseendet på alla px grafer
 dark_theme_layout = {
@@ -199,7 +199,9 @@ app.layout = dbc.Container([
             dcc.Graph(id="medal_graph", figure={}),
             dcc.Graph(id="host_graph", figure={}),
             dcc.Graph(id="gsb_graph", figure={}),
-            dcc.Graph(id='age-distribution-plot', figure={})
+            dcc.Graph(id="seasonal-plot", figure={}),
+            dcc.Graph(id='age-distribution-plot', figure={},
+            )
         ], width=12),
     ]),
     
@@ -357,6 +359,14 @@ def gsb_graph(sport):
 )
 def update_graph(input_value):
     fig_all = prepare_data_and_plots()
+    return fig_all
+
+@app.callback(
+    Output("seasonal-plot", "figure"),
+    Input("single_dropdown", "value")
+)
+def seasonal(seasonal):
+    fig_all = seasonal_graph()
     return fig_all
 
 # @callback(
