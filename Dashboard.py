@@ -260,7 +260,8 @@ gold_silver_bronze_fig = px.histogram(medal_summary,
     hover_name='variable'
     )
 
-fig_all = prepare_data_and_plots()
+#Behövs ej?
+#fig_all = prepare_data_and_plots()
 
 #app.layout = html.Div([
 #     html.H1("UK Athletes Age Distribution Across Different Eras"),
